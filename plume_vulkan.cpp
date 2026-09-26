@@ -2433,6 +2433,12 @@ namespace plume {
         if (immediatePresentModeSupported && !vsyncEnabled) {
             requiredPresentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
         }
+        // Wayland compositors commonly offer no immediate mode; mailbox still
+        // lets the application render as fast as it can without waiting for
+        // the display (the newest frame replaces a queued one).
+        else if (mailboxPresentModeSupported && !vsyncEnabled) {
+            requiredPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+        }
         // FIFO is guaranteed to be supported.
         else {
             requiredPresentMode = VK_PRESENT_MODE_FIFO_KHR;
@@ -3249,6 +3255,29 @@ namespace plume {
             imageCopy.imageExtent.height = srcLocation.placedFootprint.height;
             imageCopy.imageExtent.depth = srcLocation.placedFootprint.depth;
             vkCmdCopyBufferToImage(vk, srcBuffer->vk, dstTexture->vk, toImageLayout(dstTexture->textureLayout), 1, &imageCopy);
+        }
+        else if ((dstLocation.type == RenderTextureCopyType::PLACED_FOOTPRINT) && (srcLocation.type == RenderTextureCopyType::SUBRESOURCE)) {
+            // Texture to buffer: reading a picture back.
+            assert(srcTexture != nullptr);
+            assert(dstBuffer != nullptr);
+
+            VkBufferImageCopy imageCopy = {};
+            imageCopy.bufferOffset = dstLocation.placedFootprint.offset;
+            imageCopy.bufferRowLength = dstLocation.placedFootprint.rowWidth;
+            imageCopy.bufferImageHeight = dstLocation.placedFootprint.height;
+            imageCopy.imageSubresource.aspectMask = toAspectFlags(srcTexture->desc.format, srcTexture->desc.flags);
+            imageCopy.imageSubresource.baseArrayLayer = srcLocation.subresource.arrayIndex;
+            imageCopy.imageSubresource.layerCount = 1;
+            imageCopy.imageSubresource.mipLevel = srcLocation.subresource.mipLevel;
+            if (srcBox != nullptr) {
+                imageCopy.imageOffset.x = srcBox->left;
+                imageCopy.imageOffset.y = srcBox->top;
+                imageCopy.imageOffset.z = srcBox->front;
+            }
+            imageCopy.imageExtent.width = dstLocation.placedFootprint.width;
+            imageCopy.imageExtent.height = dstLocation.placedFootprint.height;
+            imageCopy.imageExtent.depth = dstLocation.placedFootprint.depth;
+            vkCmdCopyImageToBuffer(vk, srcTexture->vk, toImageLayout(srcTexture->textureLayout), dstBuffer->vk, 1, &imageCopy);
         }
         else {
             VkImageCopy imageCopy = {};
