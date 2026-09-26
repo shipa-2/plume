@@ -2183,12 +2183,22 @@ namespace plume {
         VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
         vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
 
-        // Pick an alpha compositing mode
+        // Pick an alpha compositing mode. The window isn't drawn translucent
+        // against the desktop either way, so any of the four counts: some
+        // surfaces (seen on Windows with certain GPU/driver combinations)
+        // only report PRE_MULTIPLIED or POST_MULTIPLIED, never OPAQUE or
+        // INHERIT, and the Vulkan spec guarantees at least one bit is set.
         if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) {
             pickedAlphaFlag = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         }
         else if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) {
             pickedAlphaFlag = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+        }
+        else if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) {
+            pickedAlphaFlag = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+        }
+        else if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) {
+            pickedAlphaFlag = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
         }
         else {
             fprintf(stderr, "No known supported alpha compositing mode\n");
@@ -2245,12 +2255,20 @@ namespace plume {
         // Sets the required presentation mode.
         setVsyncEnabled(true);
 
-        // Pick an alpha compositing mode, prefer opaque over inherit.
+        // Pick an alpha compositing mode, prefer opaque over inherit over the
+        // pre/post-multiplied modes some Windows GPU/driver combinations
+        // report instead (see the identical fallback above).
         if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) {
             pickedAlphaFlag = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         }
         else if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR) {
             pickedAlphaFlag = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+        }
+        else if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) {
+            pickedAlphaFlag = VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+        }
+        else if (surfaceCapabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) {
+            pickedAlphaFlag = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
         }
         else {
             fprintf(stderr, "No supported alpha compositing mode was found.\n");
