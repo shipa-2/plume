@@ -2261,6 +2261,13 @@ namespace plume {
         commandQueue->swapChains.insert(this);
     }
 
+    bool VulkanSwapChain::isValid() const {
+        // Every early return above (surface creation, present support, alpha
+        // mode, format) leaves surface null or the format undefined; only the
+        // path that runs to the end of the constructor clears both.
+        return (surface != VK_NULL_HANDLE) && (pickedSurfaceFormat.format != VK_FORMAT_UNDEFINED);
+    }
+
     VulkanSwapChain::~VulkanSwapChain() {
         releaseImageViews();
         releaseSwapChain();
@@ -3615,7 +3622,8 @@ namespace plume {
     }
 
     std::unique_ptr<RenderSwapChain> VulkanCommandQueue::createSwapChain(const RenderSwapChainDesc &desc) {
-        return std::make_unique<VulkanSwapChain>(this, desc);
+        std::unique_ptr<VulkanSwapChain> createdSwapChain = std::make_unique<VulkanSwapChain>(this, desc);
+        return createdSwapChain->isValid() ? std::move(createdSwapChain) : nullptr;
     }
 
     void VulkanCommandQueue::executeCommandLists(const RenderCommandList **commandLists, uint32_t commandListCount, RenderCommandSemaphore **waitSemaphores, uint32_t waitSemaphoreCount, RenderCommandSemaphore **signalSemaphores, uint32_t signalSemaphoreCount, RenderCommandFence *signalFence) {
