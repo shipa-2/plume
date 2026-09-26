@@ -261,6 +261,7 @@ namespace plume {
         void getWindowSize(uint32_t &dstWidth, uint32_t &dstHeight) const;
         void releaseSwapChain();
         void releaseImageViews();
+        bool isValid() const;
     };
 
     struct VulkanFramebuffer : RenderFramebuffer {
