@@ -2110,6 +2110,7 @@ namespace plume {
         surfaceCreateInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
         surfaceCreateInfo.hwnd = HWND(desc.renderWindow);
         surfaceCreateInfo.hinstance = GetModuleHandle(nullptr);
+        fprintf(stderr, "Surface: HWND %p (%s)\n", (void *)(desc.renderWindow), IsWindow(HWND(desc.renderWindow)) ? "a window" : "not a window");
 
         VulkanInterface *renderInterface = commandQueue->device->renderInterface;
         res = vkCreateWin32SurfaceKHR(renderInterface->instance, &surfaceCreateInfo, nullptr, &surface);
@@ -2181,7 +2182,15 @@ namespace plume {
         }
 
         VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
+        res = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCapabilities);
+        if (res != VK_SUCCESS) {
+            fprintf(stderr, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR failed with error code 0x%X.\n", res);
+            return;
+        }
+        fprintf(stderr, "Surface: composite alpha modes 0x%X, images %u-%u, extent %ux%u (current %ux%u)\n",
+            surfaceCapabilities.supportedCompositeAlpha, surfaceCapabilities.minImageCount, surfaceCapabilities.maxImageCount,
+            surfaceCapabilities.maxImageExtent.width, surfaceCapabilities.maxImageExtent.height,
+            surfaceCapabilities.currentExtent.width, surfaceCapabilities.currentExtent.height);
 
         // Pick an alpha compositing mode. The window isn't drawn translucent
         // against the desktop either way, so any of the four counts: some
