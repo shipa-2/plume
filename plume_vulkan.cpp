@@ -4564,8 +4564,20 @@ namespace plume {
 
     // VulkanInterface
 
+    static PFN_vkGetInstanceProcAddr customGetInstanceProcAddr = nullptr;
+
+    void SetVulkanGetInstanceProcAddr(PFN_vkGetInstanceProcAddr getInstanceProcAddr) {
+        customGetInstanceProcAddr = getInstanceProcAddr;
+    }
+
     VulkanInterface::VulkanInterface() {
-        VkResult res = volkInitialize();
+        VkResult res = VK_SUCCESS;
+        if (customGetInstanceProcAddr != nullptr) {
+            volkInitializeCustom(customGetInstanceProcAddr);
+        }
+        else {
+            res = volkInitialize();
+        }
         if (res != VK_SUCCESS) {
             fprintf(stderr, "volkInitialize failed with error code 0x%X.\n", res);
             return;

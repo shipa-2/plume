@@ -42,6 +42,11 @@
 #endif
 
 namespace plume {
+    // Takes Vulkan from this vkGetInstanceProcAddr instead of the system loader:
+    // a driver the app ships itself (Mesa Turnip on Android, opened with
+    // libadrenotools). Set before the first VulkanInterface is made.
+    void SetVulkanGetInstanceProcAddr(PFN_vkGetInstanceProcAddr getInstanceProcAddr);
+
     struct VulkanCommandQueue;
     struct VulkanDevice;
     struct VulkanInterface;
