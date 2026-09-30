@@ -145,7 +145,8 @@ namespace plume {
         virtual void copyTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture) = 0;
         // The whole of srcTexture's first level scaled onto the whole of dstTexture's, both
         // in the copy layouts (COPY_SOURCE, COPY_DEST). Not every backend has it: false when not done.
-        virtual bool blitTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture, bool linearFilter) { return false; }
+        // dstRect: the part of dstTexture the source is scaled into, the rest cleared to black (nullptr: all of it).
+        virtual bool blitTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture, bool linearFilter, const RenderRect *dstRect = nullptr) { return false; }
         virtual void resolveTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture) = 0;
         virtual void resolveTextureRegion(const RenderTexture *dstTexture, uint32_t dstX, uint32_t dstY, const RenderTexture *srcTexture, const RenderRect *srcRect = nullptr, RenderResolveMode resolveMode = RenderResolveMode::AVERAGE) = 0;
         virtual void buildBottomLevelAS(const RenderAccelerationStructure *dstAccelerationStructure, RenderBufferReference scratchBuffer, const RenderBottomLevelASBuildInfo &buildInfo) = 0;

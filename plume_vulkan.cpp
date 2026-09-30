@@ -3399,7 +3399,7 @@ namespace plume {
         vkCmdCopyImage(vk, src->vk, srcLayout, dst->vk, dstLayout, uint32_t(imageCopies.size()), imageCopies.data());
     }
 
-    bool VulkanCommandList::blitTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture, bool linearFilter) {
+    bool VulkanCommandList::blitTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture, bool linearFilter, const RenderRect *dstRect) {
         endActiveRenderPass();
 
         assert(dstTexture != nullptr);
@@ -3414,6 +3414,23 @@ namespace plume {
         blit.dstSubresource.aspectMask = toAspectFlags(dst->desc.format, dst->desc.flags);
         blit.dstSubresource.layerCount = 1;
         blit.dstOffsets[1] = { int32_t(dst->desc.width), int32_t(dst->desc.height), 1 };
+        if (dstRect != nullptr) {
+            // Black outside the rectangle (letterboxing), then the frame inside it.
+            VkClearColorValue black = {};
+            black.float32[3] = 1.0f;
+            VkImageSubresourceRange range = {};
+            range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            range.levelCount = 1;
+            range.layerCount = 1;
+            vkCmdClearColorImage(vk, dst->vk, toImageLayout(dst->textureLayout), &black, 1, &range);
+            VkMemoryBarrier barrier = {};
+            barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            vkCmdPipelineBarrier(vk, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &barrier, 0, nullptr, 0, nullptr);
+            blit.dstOffsets[0] = { dstRect->left, dstRect->top, 0 };
+            blit.dstOffsets[1] = { dstRect->right, dstRect->bottom, 1 };
+        }
         vkCmdBlitImage(vk, src->vk, toImageLayout(src->textureLayout), dst->vk, toImageLayout(dst->textureLayout), 1, &blit,
             linearFilter ? VK_FILTER_LINEAR : VK_FILTER_NEAREST);
         return true;
@@ -4159,6 +4176,21 @@ namespace plume {
             fprintf(stderr, "vkCreateDevice failed with error code 0x%X.\n", res);
             return;
         }
+
+        // A device older than Vulkan 1.2 (Adreno 6xx drivers report 1.1) has
+        // buffer device addresses only through VK_KHR_buffer_device_address, and
+        // the loader then has no core vkGetBufferDeviceAddress to hand volk.
+        if (vkGetBufferDeviceAddress == nullptr) {
+            vkGetBufferDeviceAddress = reinterpret_cast<PFN_vkGetBufferDeviceAddress>(vkGetDeviceProcAddr(vk, "vkGetBufferDeviceAddressKHR"));
+        }
+        if (vkGetBufferDeviceAddress == nullptr) {
+            vkGetBufferDeviceAddress = reinterpret_cast<PFN_vkGetBufferDeviceAddress>(vkGetDeviceProcAddr(vk, "vkGetBufferDeviceAddress"));
+        }
+        fprintf(stderr, "Vulkan device: %s, API %u.%u.%u, driver 0x%X; shaderInt64 %d, descriptor indexing %d, buffer device address %d%s\n",
+            physicalDeviceProperties.deviceName, VK_API_VERSION_MAJOR(physicalDeviceProperties.apiVersion),
+            VK_API_VERSION_MINOR(physicalDeviceProperties.apiVersion), VK_API_VERSION_PATCH(physicalDeviceProperties.apiVersion),
+            physicalDeviceProperties.driverVersion, int(deviceFeatures.features.shaderInt64), int(descriptorIndexingSupported),
+            int(bufferDeviceAddressSupported), vkGetBufferDeviceAddress == nullptr ? " (no vkGetBufferDeviceAddress)" : "");
 
         for (uint32_t i = 0; i < queueFamilyCount; i++) {
             for (uint32_t j = 0; j < queueFamilies[i].queues.size(); j++) {

@@ -341,7 +341,7 @@ namespace plume {
         void copyTextureRegion(const RenderTextureCopyLocation &dstLocation, const RenderTextureCopyLocation &srcLocation, uint32_t dstX, uint32_t dstY, uint32_t dstZ, const RenderBox *srcBox) override;
         void copyBuffer(const RenderBuffer *dstBuffer, const RenderBuffer *srcBuffer) override;
         void copyTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture) override;
-        bool blitTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture, bool linearFilter) override;
+        bool blitTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture, bool linearFilter, const RenderRect *dstRect = nullptr) override;
         void resolveTexture(const RenderTexture *dstTexture, const RenderTexture *srcTexture) override;
         void resolveTextureRegion(const RenderTexture *dstTexture, uint32_t dstX, uint32_t dstY, const RenderTexture *srcTexture, const RenderRect *srcRect, RenderResolveMode resolveMode) override;
         void buildBottomLevelAS(const RenderAccelerationStructure *dstAccelerationStructure, RenderBufferReference scratchBuffer, const RenderBottomLevelASBuildInfo &buildInfo) override;
