@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <climits>
+#include <cstdlib>
 #include <unordered_map>
 
 #if PLUME_SDL_VULKAN_ENABLED
@@ -1534,8 +1535,11 @@ namespace plume {
 
         VkPipelineViewportStateCreateInfo viewportState = {};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = renderTargetCount;
-        viewportState.scissorCount = renderTargetCount;
+        // One viewport whatever the number of render targets: several render
+        // targets still share it, and more than one needs multiViewport, which
+        // Mali lacks (maxViewports 1) - the draws there came out black.
+        viewportState.viewportCount = std::min(renderTargetCount, 1u);
+        viewportState.scissorCount = viewportState.viewportCount;
 
         VkPipelineRasterizationStateCreateInfo rasterization = {};
         rasterization.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -4717,24 +4721,33 @@ namespace plume {
         createInfo.ppEnabledExtensionNames = enabledExtensions.data();
         createInfo.enabledExtensionCount = uint32_t(enabledExtensions.size());
 
+        // Debug builds, or any build with PLUME_VALIDATION set (an APK packs the
+        // layer in its own lib directory, where the Android loader finds it).
+        bool validationWanted = getenv("PLUME_VALIDATION") != nullptr;
 #   ifdef VULKAN_VALIDATION_LAYER_ENABLED
-        // Search for validation layer and enabled it.
-        uint32_t layerCount;
-        vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+        validationWanted = true;
+#   endif
+        if (validationWanted) {
+            // Search for validation layer and enabled it.
+            uint32_t layerCount;
+            vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
-        std::vector<VkLayerProperties> availableLayers(layerCount);
-        vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+            std::vector<VkLayerProperties> availableLayers(layerCount);
+            vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
         
-        const char validationLayerName[] = "VK_LAYER_KHRONOS_validation";
-        const char *enabledLayerNames[] = { validationLayerName };
-        for (const VkLayerProperties &layerProperties : availableLayers) {
-            if (strcmp(layerProperties.layerName, validationLayerName) == 0) {
-                createInfo.ppEnabledLayerNames = enabledLayerNames;
-                createInfo.enabledLayerCount = 1;
-                break;
+            static const char validationLayerName[] = "VK_LAYER_KHRONOS_validation";
+            static const char *const enabledLayerNames[] = { validationLayerName };
+            for (const VkLayerProperties &layerProperties : availableLayers) {
+                if (strcmp(layerProperties.layerName, validationLayerName) == 0) {
+                    createInfo.ppEnabledLayerNames = enabledLayerNames;
+                    createInfo.enabledLayerCount = 1;
+                    break;
+                }
+            }
+            if (createInfo.enabledLayerCount == 0) {
+                fprintf(stderr, "PLUME_VALIDATION: VK_LAYER_KHRONOS_validation not found.\n");
             }
         }
-#   endif
         
         res = vkCreateInstance(&createInfo, nullptr, &instance);
         if (res != VK_SUCCESS) {
