@@ -1805,6 +1805,9 @@ namespace plume {
         // Samplers.
         bool samplerMirrorClampToEdge = false;
 
+        // Shaders: whether they may write SV_ClipDistance (many Mali drivers say no).
+        bool clipDistance = true;
+
         // Present.
         bool presentWait = false;
         bool displayTiming = false;

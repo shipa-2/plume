@@ -878,10 +878,14 @@ namespace plume {
         case RenderHeapType::UPLOAD:
             bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
             createInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;
+            // Coherent: nothing here flushes or invalidates, and Mali also offers a
+            // host-cached type that is not.
+            createInfo.requiredFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
             break;
         case RenderHeapType::READBACK:
             bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_DST_BIT;
             createInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+            createInfo.requiredFlags |= VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
             break;
         case RenderHeapType::GPU_UPLOAD:
             bufferInfo.usage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -1034,7 +1038,9 @@ namespace plume {
 
         VkResult res = vmaCreateImage(device->allocator, &imageInfo, &createInfo, &vk, &allocation, &allocationInfo);
         if (res != VK_SUCCESS) {
-            fprintf(stderr, "vmaCreateImage failed with error code 0x%X.\n", res);
+            fprintf(stderr, "vmaCreateImage failed with error code 0x%X (format %d, %ux%ux%u, %u mips, %u layers, %u samples, usage 0x%X, flags 0x%X).\n", res,
+                int(imageInfo.format), imageInfo.extent.width, imageInfo.extent.height, imageInfo.extent.depth, imageInfo.mipLevels,
+                imageInfo.arrayLayers, uint32_t(imageInfo.samples), uint32_t(imageInfo.usage), uint32_t(imageInfo.flags));
             return;
         }
 
@@ -4269,6 +4275,7 @@ namespace plume {
 
         // Fill capabilities.
         capabilities.geometryShader = deviceFeatures.features.geometryShader;
+        capabilities.clipDistance = deviceFeatures.features.shaderClipDistance;
         capabilities.raytracing = rayTracingSupported;
         capabilities.raytracingStateUpdate = false;
         capabilities.sampleLocations = (sampleLocationProperties.sampleLocationSampleCounts != 0);
