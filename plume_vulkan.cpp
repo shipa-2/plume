@@ -258,6 +258,12 @@ namespace plume {
             return VK_FORMAT_BC7_UNORM_BLOCK;
         case RenderFormat::BC7_UNORM_SRGB:
             return VK_FORMAT_BC7_SRGB_BLOCK;
+        case RenderFormat::ETC2_RGB8_UNORM:
+            return VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK;
+        case RenderFormat::ETC2_RGB8A1_UNORM:
+            return VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK;
+        case RenderFormat::ETC2_RGBA8_UNORM:
+            return VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK;
         default:
             assert(false && "Unknown format.");
             return VK_FORMAT_UNDEFINED;

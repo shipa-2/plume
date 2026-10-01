@@ -162,6 +162,10 @@ namespace plume {
         BC7_UNORM_SRGB,
         R11G11B10_FLOAT,
         D24_UNORM_S8_UINT,
+        // ETC2 / EAC: what most phone GPUs take where desktop ones take BC.
+        ETC2_RGB8_UNORM,
+        ETC2_RGB8A1_UNORM,
+        ETC2_RGBA8_UNORM,
         MAX
     };
 
@@ -592,6 +596,8 @@ namespace plume {
         case RenderFormat::BC4_UNORM:
         case RenderFormat::BC4_SNORM:
         case RenderFormat::BC4_TYPELESS:
+        case RenderFormat::ETC2_RGB8_UNORM:
+        case RenderFormat::ETC2_RGB8A1_UNORM:
             return 8;
         case RenderFormat::BC2_UNORM:
         case RenderFormat::BC2_UNORM_SRGB:
@@ -605,6 +611,7 @@ namespace plume {
         case RenderFormat::BC6H_SF16:
         case RenderFormat::BC7_UNORM:
         case RenderFormat::BC7_UNORM_SRGB:
+        case RenderFormat::ETC2_RGBA8_UNORM:
             return 16;
         default:
             assert(false && "Unknown format.");
@@ -691,6 +698,9 @@ namespace plume {
         case RenderFormat::BC7_TYPELESS:
         case RenderFormat::BC7_UNORM:
         case RenderFormat::BC7_UNORM_SRGB:
+        case RenderFormat::ETC2_RGB8_UNORM:
+        case RenderFormat::ETC2_RGB8A1_UNORM:
+        case RenderFormat::ETC2_RGBA8_UNORM:
             return 4;
         default:
             assert(false && "Unknown format.");
