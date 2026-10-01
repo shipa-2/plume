@@ -355,7 +355,10 @@ namespace plume {
         READ_WRITE_STRUCTURED_BUFFER,
         BYTE_ADDRESS_BUFFER,
         READ_WRITE_BYTE_ADDRESS_BUFFER,
-        ACCELERATION_STRUCTURE
+        ACCELERATION_STRUCTURE,
+        // A uniform buffer whose offset is given when the set is bound
+        // (setGraphicsDescriptorSetDynamic). Vulkan only.
+        CONSTANT_BUFFER_DYNAMIC
     };
 
     enum class RenderRootDescriptorType {
